@@ -9,9 +9,11 @@ export async function GET() {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const data = getLatestDeviceReadings(deviceId, 20);
+    // Await the Redis call and ensure no dummy data is used
+    const data = await getLatestDeviceReadings(deviceId, 20);
 
-    return NextResponse.json(data, {
+    // Always return a plain array for frontend compatibility
+    return NextResponse.json(Array.isArray(data) ? data : [], {
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
@@ -19,7 +21,8 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error generating weather data:", error);
+    console.error("Error fetching weather data:", error);
+    // Do not throw error for empty, only for real errors
     return NextResponse.json(
       { error: "Failed to fetch weather data" },
       { status: 500 }
