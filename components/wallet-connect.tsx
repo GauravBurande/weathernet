@@ -1,280 +1,169 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Wallet, ExternalLink, CheckCircle, AlertCircle, Coins } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-
-interface WalletState {
-  isConnected: boolean
-  address: string | null
-  balance: string | null
-  chainId: number | null
-}
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Wallet, Coins } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export function WalletConnect() {
-  const [wallet, setWallet] = useState<WalletState>({
-    isConnected: false,
-    address: null,
-    balance: null,
-    chainId: null,
-  })
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [isClaiming, setIsClaiming] = useState(false)
-  const [claimableTokens, setClaimableTokens] = useState("0.0")
-  const { toast } = useToast()
+  const { toast } = useToast();
+  const [address, setAddress] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string>("0.0");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimableTokens, setClaimableTokens] = useState("0.0");
 
-  // Avalanche Fuji Testnet Chain ID
-  const FUJI_CHAIN_ID = 43113
-
-  useEffect(() => {
-    checkWalletConnection()
-  }, [])
-
-  const checkWalletConnection = async () => {
-    if (typeof window !== "undefined" && window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" })
-        if (accounts.length > 0) {
-          const chainId = await window.ethereum.request({ method: "eth_chainId" })
-          const balance = await window.ethereum.request({
-            method: "eth_getBalance",
-            params: [accounts[0], "latest"],
-          })
-
-          setWallet({
-            isConnected: true,
-            address: accounts[0],
-            balance: (Number.parseInt(balance, 16) / 1e18).toFixed(4),
-            chainId: Number.parseInt(chainId, 16),
-          })
-
-          // Simulate checking claimable tokens
-          setClaimableTokens("2.5")
-        }
-      } catch (error) {
-        console.error("Error checking wallet connection:", error)
-      }
-    }
-  }
+  const FUJI_CHAIN_ID = "0xa869"; // Avalanche Fuji Testnet chainId (hex)
 
   const connectWallet = async () => {
     if (!window.ethereum) {
       toast({
-        title: "Wallet not found",
-        description: "Please install MetaMask or another Ethereum wallet",
+        title: "No Wallet Found",
+        description: "Install MetaMask to continue",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsConnecting(true)
+    setIsConnecting(true);
     try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const account = accounts[0];
 
-      // Switch to Avalanche Fuji Testnet
+      // Switch to Fuji Testnet
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: `0x${FUJI_CHAIN_ID.toString(16)}` }],
-        })
-      } catch (switchError: any) {
-        // If the chain doesn't exist, add it
-        if (switchError.code === 4902) {
+          params: [{ chainId: FUJI_CHAIN_ID }],
+        });
+      } catch (err: any) {
+        if (err.code === 4902) {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
             params: [
               {
-                chainId: `0x${FUJI_CHAIN_ID.toString(16)}`,
+                chainId: FUJI_CHAIN_ID,
                 chainName: "Avalanche Fuji Testnet",
-                nativeCurrency: {
-                  name: "AVAX",
-                  symbol: "AVAX",
-                  decimals: 18,
-                },
+                nativeCurrency: { name: "AVAX", symbol: "AVAX", decimals: 18 },
                 rpcUrls: ["https://api.avax-test.network/ext/bc/C/rpc"],
                 blockExplorerUrls: ["https://testnet.snowtrace.io/"],
               },
             ],
-          })
+          });
+        } else {
+          throw err;
         }
       }
 
-      const balance = await window.ethereum.request({
+      // Get balance
+      const balanceHex = await window.ethereum.request({
         method: "eth_getBalance",
-        params: [accounts[0], "latest"],
-      })
+        params: [account, "latest"],
+      });
+      const balance = (parseInt(balanceHex, 16) / 1e18).toFixed(4);
 
-      setWallet({
-        isConnected: true,
-        address: accounts[0],
-        balance: (Number.parseInt(balance, 16) / 1e18).toFixed(4),
-        chainId: FUJI_CHAIN_ID,
-      })
-
-      // Simulate checking claimable tokens
-      setClaimableTokens("2.5")
+      setAddress(account);
+      setBalance(balance);
+      setClaimableTokens("2.5"); // demo rewards
 
       toast({
-        title: "Wallet connected",
-        description: "Successfully connected to Avalanche Fuji Testnet",
-      })
-    } catch (error) {
-      console.error("Error connecting wallet:", error)
+        title: "Wallet Connected",
+        description: "Connected to Fuji Testnet",
+      });
+    } catch (err) {
+      console.error(err);
       toast({
-        title: "Connection failed",
-        description: "Failed to connect wallet",
+        title: "Connection Failed",
+        description: "Try again",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsConnecting(false)
+      setIsConnecting(false);
     }
-  }
+  };
 
   const claimTokens = async () => {
-    if (!wallet.isConnected) return
-
-    setIsClaiming(true)
+    if (!address) return;
+    setIsClaiming(true);
     try {
-      // Simulate contract interaction for claiming tokens
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((r) => setTimeout(r, 2000)); // fake delay
 
       toast({
-        title: "Tokens claimed!",
-        description: `Successfully claimed ${claimableTokens} AVAX tokens`,
-      })
-
-      setClaimableTokens("0.0")
-
-      // Refresh balance
-      const balance = await window.ethereum.request({
-        method: "eth_getBalance",
-        params: [wallet.address, "latest"],
-      })
-
-      setWallet((prev) => ({
-        ...prev,
-        balance: (Number.parseInt(balance, 16) / 1e18).toFixed(4),
-      }))
-    } catch (error) {
-      console.error("Error claiming tokens:", error)
+        title: "Claim Successful",
+        description: `You claimed ${claimableTokens} AVAX`,
+      });
+      setClaimableTokens("0.0");
+    } catch (err) {
+      console.error(err);
       toast({
-        title: "Claim failed",
-        description: "Failed to claim tokens",
+        title: "Claim Failed",
+        description: "Try again",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsClaiming(false)
+      setIsClaiming(false);
     }
-  }
+  };
 
   const disconnectWallet = () => {
-    setWallet({
-      isConnected: false,
-      address: null,
-      balance: null,
-      chainId: null,
-    })
-    setClaimableTokens("0.0")
+    setAddress(null);
+    setBalance("0.0");
+    setClaimableTokens("0.0");
     toast({
-      title: "Wallet disconnected",
-      description: "Successfully disconnected wallet",
-    })
-  }
-
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
-  }
-
-  const isCorrectNetwork = wallet.chainId === FUJI_CHAIN_ID
+      title: "Wallet Disconnected",
+      description: "You have disconnected your wallet",
+    });
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Wallet className="h-5 w-5" />
-          Wallet & Token Claims
+          <Wallet className="h-5 w-5" /> Wallet & Claim
         </CardTitle>
-        <CardDescription>Connect your wallet to claim AVAX rewards from your weather nodes</CardDescription>
+        <CardDescription>
+          Connect wallet to claim AVAX test tokens
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!wallet.isConnected ? (
-          <Button onClick={connectWallet} disabled={isConnecting} className="w-full">
-            <Wallet className="h-4 w-4 mr-2" />
+        {!address ? (
+          <Button
+            onClick={connectWallet}
+            disabled={isConnecting}
+            className="w-full"
+          >
             {isConnecting ? "Connecting..." : "Connect Wallet"}
           </Button>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="font-medium">Connected</span>
-                </div>
-                <div className="text-sm text-muted-foreground font-mono">{formatAddress(wallet.address!)}</div>
-              </div>
-              <Button variant="outline" size="sm" onClick={disconnectWallet}>
+          <>
+            <div className="flex justify-between items-center">
+              <div className="text-sm font-mono break-all">{address}</div>
+              <Button size="sm" variant="outline" onClick={disconnectWallet}>
                 Disconnect
               </Button>
             </div>
-
-            {!isCorrectNetwork && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                <span className="text-sm text-destructive">Please switch to Avalanche Fuji Testnet</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Balance</div>
-                <div className="font-mono text-lg">{wallet.balance} AVAX</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Network</div>
-                <Badge variant={isCorrectNetwork ? "default" : "destructive"}>
-                  {isCorrectNetwork ? "Fuji Testnet" : "Wrong Network"}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="font-medium">Claimable Rewards</div>
-                  <div className="text-sm text-muted-foreground">Earned from your weather nodes</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono text-lg">{claimableTokens} AVAX</div>
-                </div>
-              </div>
-
-              <Button
-                onClick={claimTokens}
-                disabled={!isCorrectNetwork || Number.parseFloat(claimableTokens) === 0 || isClaiming}
-                className="w-full"
-              >
-                <Coins className="h-4 w-4 mr-2" />
-                {isClaiming ? "Claiming..." : "Claim Rewards"}
-              </Button>
-            </div>
-
-            <div className="text-xs text-muted-foreground text-center">
-              <a
-                href={`https://testnet.snowtrace.io/address/${wallet.address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 hover:underline"
-              >
-                View on Snowtrace
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
+            <div className="text-lg">Balance: {balance} AVAX</div>
+            <div className="text-lg">Claimable: {claimableTokens} AVAX</div>
+            <Button
+              onClick={claimTokens}
+              disabled={claimableTokens === "0.0" || isClaiming}
+              className="w-full"
+            >
+              <Coins className="h-4 w-4 mr-2" />
+              {isClaiming ? "Claiming..." : "Claim Tokens"}
+            </Button>
+          </>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

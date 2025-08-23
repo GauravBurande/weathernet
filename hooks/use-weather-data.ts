@@ -1,51 +1,80 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useEffect, useCallback } from "react";
+import { useWeatherStore } from "@/lib/weather-store";
+import { weatherService } from "@/lib/weather-service";
 
 export interface WeatherDataPoint {
-  device_id: string
-  timestamp: string
+  device_id: string;
+  timestamp: string;
   sensors: {
-    temperature_c: number
-    humidity_percent: number
-    rain_detected: boolean
-    air_quality_mq135: number
-  }
+    temperature_c: number;
+    humidity_percent: number;
+    rain_detected: boolean;
+    air_quality_mq135: number;
+  };
   location: {
-    lat: number
-    lon: number
-  }
+    lat: number;
+    lon: number;
+  };
 }
 
-export function useWeatherData(refreshInterval = 30000) {
-  const [data, setData] = useState<WeatherDataPoint[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function useWeatherData(
+  autoPoll: boolean = true,
+  pollInterval: number = 15000
+) {
+  const {
+    weatherData,
+    loading,
+    error,
+    lastUpdated,
+    getLatestData,
+    getDataByDevice,
+    getStats,
+  } = useWeatherStore();
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch("/api/getdata")
-      if (!response.ok) {
-        throw new Error("Failed to fetch weather data")
-      }
-      const weatherData = await response.json()
-      setData(weatherData)
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error")
-    } finally {
-      setLoading(false)
-    }
-  }
+  const refresh = useCallback(async () => {
+    await weatherService.refresh();
+  }, []);
+
+  const startPolling = useCallback(() => {
+    weatherService.startPolling(pollInterval);
+  }, [pollInterval]);
+
+  const stopPolling = useCallback(() => {
+    weatherService.stopPolling();
+  }, []);
 
   useEffect(() => {
-    fetchData()
+    if (autoPoll) {
+      startPolling();
 
-    // Set up polling for real-time updates
-    const interval = setInterval(fetchData, refreshInterval)
+      return () => {
+        stopPolling();
+      };
+    }
+  }, [autoPoll, startPolling, stopPolling]);
 
-    return () => clearInterval(interval)
-  }, [refreshInterval])
+  return {
+    // Data
+    data: weatherData,
+    latestData: getLatestData(),
+    stats: getStats(),
 
-  return { data, loading, error, refetch: fetchData }
+    // State
+    loading,
+    error,
+    lastUpdated,
+
+    // Actions
+    refresh,
+    startPolling,
+    stopPolling,
+
+    // Utilities
+    getDataByDevice,
+
+    // Polling status
+    isPolling: weatherService.getPollingStatus(),
+  };
 }

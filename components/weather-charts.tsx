@@ -1,7 +1,17 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import {
   LineChart,
   Line,
@@ -13,10 +23,11 @@ import {
   Area,
   BarChart,
   Bar,
-} from "recharts"
-import { useWeatherData } from "@/hooks/use-weather-data"
-import { RefreshCw, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from "recharts";
+import { useWeatherStore } from "@/lib/weather-store";
+import { RefreshCw, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { weatherService } from "@/lib/weather-service";
 
 const chartConfig = {
   temperature: {
@@ -35,35 +46,42 @@ const chartConfig = {
     label: "Data Points",
     color: "hsl(var(--chart-1))",
   },
-}
+};
 
 export function WeatherCharts() {
-  const { data, loading, error, refetch } = useWeatherData()
+  const { weatherData, loading, error } = useWeatherStore();
 
   // Process data for charts
-  const temperatureData = data.slice(0, 6).map((item, index) => ({
-    time: new Date(item.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+  const temperatureData = weatherData.slice(-6).map((item, index) => ({
+    time: new Date(item.timestamp).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
     temperature: item.sensors.temperature_c,
     humidity: item.sensors.humidity_percent,
-  }))
+  }));
 
-  const airQualityData = data.slice(0, 6).map((item, index) => ({
-    time: new Date(item.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+  const airQualityData = weatherData.slice(-6).map((item, index) => ({
+    time: new Date(item.timestamp).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
     aqi: item.sensors.air_quality_mq135,
-  }))
+  }));
 
-  const nodeActivityData = data.reduce(
-    (acc, item) => {
-      const existing = acc.find((node) => node.node === item.device_id)
-      if (existing) {
-        existing.dataPoints += 1
-      } else {
-        acc.push({ node: item.device_id, dataPoints: 1 })
-      }
-      return acc
-    },
-    [] as { node: string; dataPoints: number }[],
-  )
+  const nodeActivityData = weatherData.reduce((acc, item) => {
+    const existing = acc.find((node) => node.node === item.device_id);
+    if (existing) {
+      existing.dataPoints += 1;
+    } else {
+      acc.push({ node: item.device_id, dataPoints: 1 });
+    }
+    return acc;
+  }, [] as { node: string; dataPoints: number }[]);
+
+  const handleRefresh = async () => {
+    await weatherService.refresh();
+  };
 
   if (error) {
     return (
@@ -74,10 +92,12 @@ export function WeatherCharts() {
               <div className="space-y-4">
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
                 <div>
-                  <h3 className="text-lg font-semibold">Failed to load chart data</h3>
+                  <h3 className="text-lg font-semibold">
+                    Failed to load chart data
+                  </h3>
                   <p className="text-muted-foreground">{error}</p>
                 </div>
-                <Button onClick={refetch} variant="outline">
+                <Button onClick={handleRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Try Again
                 </Button>
@@ -86,10 +106,10 @@ export function WeatherCharts() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  if (loading && data.length === 0) {
+  if (loading && weatherData.length === 0) {
     return (
       <div className="grid gap-6 md:grid-cols-2">
         {[1, 2, 3].map((i) => (
@@ -104,7 +124,7 @@ export function WeatherCharts() {
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -120,7 +140,11 @@ export function WeatherCharts() {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={temperatureData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="time" className="text-muted-foreground" fontSize={12} />
+                <XAxis
+                  dataKey="time"
+                  className="text-muted-foreground"
+                  fontSize={12}
+                />
                 <YAxis className="text-muted-foreground" fontSize={12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Line
@@ -154,7 +178,11 @@ export function WeatherCharts() {
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={airQualityData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="time" className="text-muted-foreground" fontSize={12} />
+                <XAxis
+                  dataKey="time"
+                  className="text-muted-foreground"
+                  fontSize={12}
+                />
                 <YAxis className="text-muted-foreground" fontSize={12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
@@ -175,22 +203,32 @@ export function WeatherCharts() {
       <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle>Node Activity</CardTitle>
-          <CardDescription>Current data points from each active node</CardDescription>
+          <CardDescription>
+            Current data points from each active node
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={nodeActivityData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="node" className="text-muted-foreground" fontSize={12} />
+                <XAxis
+                  dataKey="node"
+                  className="text-muted-foreground"
+                  fontSize={12}
+                />
                 <YAxis className="text-muted-foreground" fontSize={12} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="dataPoints" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="dataPoints"
+                  fill="hsl(var(--chart-1))"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
