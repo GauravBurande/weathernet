@@ -51,8 +51,28 @@ function getAQIStatus(aqi: number) {
   return { label: "Very Unhealthy", variant: "destructive" as const };
 }
 
+// Map incoming Redis data to expected table format
+function mapWeatherData(rawData: any) {
+  return {
+    device_id: rawData.device_id,
+    sensors: {
+      temperature_c: rawData.sensors.temperature_c,
+      humidity_percent: rawData.sensors.humidityPercent, // map to expected key
+      air_quality: rawData.sensors.airQuality, // map to expected key
+      water_level: rawData.sensors.waterLevel, // for rain detection
+    },
+    location: rawData.location,
+    timestamp: rawData.timestamp || null, // fallback if not present
+  };
+}
+
 export function WeatherDataTable() {
   const { weatherData, loading, error } = useWeatherStore();
+
+  // Map all data points to expected format
+  const mappedData = Array.isArray(weatherData)
+    ? weatherData.map(mapWeatherData)
+    : [];
 
   const handleRefresh = async () => {
     await weatherService.refresh();
@@ -145,7 +165,7 @@ export function WeatherDataTable() {
                       Air Quality
                     </div>
                   </TableHead>
-                  <TableHead>Rain</TableHead>
+                  <TableHead>Water Level</TableHead>
                   <TableHead>
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
@@ -161,9 +181,9 @@ export function WeatherDataTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {weatherData.map((dataPoint) => {
+                {mappedData.map((dataPoint) => {
                   const aqiStatus = getAQIStatus(
-                    dataPoint?.sensors?.air_quality_mq135 ?? 0
+                    dataPoint?.sensors?.air_quality ?? 0
                   );
                   return (
                     <TableRow key={dataPoint.device_id}>
@@ -185,7 +205,7 @@ export function WeatherDataTable() {
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <span className="font-mono text-sm">
-                            {dataPoint.sensors.air_quality_mq135}
+                            {dataPoint.sensors.air_quality}
                           </span>
                           <Badge
                             variant={aqiStatus.variant}
@@ -196,17 +216,9 @@ export function WeatherDataTable() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            dataPoint.sensors.rain_detected
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {dataPoint.sensors.rain_detected
-                            ? "Detected"
-                            : "None"}
-                        </Badge>
+                        <span className="font-mono text-sm">
+                          {dataPoint.sensors.water_level}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground font-mono">
@@ -216,7 +228,9 @@ export function WeatherDataTable() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
-                          {formatTimestamp(dataPoint.timestamp)}
+                          {dataPoint.timestamp
+                            ? formatTimestamp(dataPoint.timestamp)
+                            : "-"}
                         </span>
                       </TableCell>
                     </TableRow>
