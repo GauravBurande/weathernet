@@ -172,12 +172,12 @@ export function WeatherDataTable() {
                       Location
                     </div>
                   </TableHead>
-                  <TableHead>
+                  {/* <TableHead>
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       Last Update
                     </div>
-                  </TableHead>
+                  </TableHead> */}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -226,13 +226,13 @@ export function WeatherDataTable() {
                           {dataPoint.location.lon.toFixed(4)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <span className="text-sm text-muted-foreground">
                           {dataPoint.timestamp
                             ? formatTimestamp(dataPoint.timestamp)
                             : "-"}
                         </span>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   );
                 })}
