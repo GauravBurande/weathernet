@@ -37,40 +37,36 @@ export async function getRedisClient(): Promise<ReturnType<
   }
 }
 /**
- * Store an object in Redis using its device_id as the key.
- * Overwrites existing data for that device_id.
+ * Store an object in Redis using its key.
+ * Overwrites existing data for that key.
  */
 export async function setRedisObject(
-  obj: { device_id: string; [key: string]: any },
+  key: string,
+  value: string,
   ttlSeconds?: number
 ): Promise<void> {
   const client = await getRedisClient();
   if (!client) return;
 
-  if (!obj.device_id) {
-    throw new Error("❌ setRedisObject: object must have a device_id");
+  if (!key) {
+    throw new Error("❌ setRedisObject: object must have a key");
   }
 
-  const key = obj.device_id;
-  const serialized = JSON.stringify(obj);
-
   if (ttlSeconds) {
-    await client.set(key, serialized, { EX: ttlSeconds });
+    await client.set(key, value, { EX: ttlSeconds });
   } else {
-    await client.set(key, serialized);
+    await client.set(key, value);
   }
 }
 
 /**
- * Retrieve an object from Redis by device_id.
+ * Retrieve an object from Redis by key.
  */
-export async function getRedisObject<T = any>(
-  device_id: string
-): Promise<T | null> {
+export async function getRedisObject<T = any>(key: string): Promise<T | null> {
   const client = await getRedisClient();
   if (!client) return null;
 
-  const data = await client.get(device_id);
+  const data = await client.get(key);
   return data ? (JSON.parse(data) as T) : null;
 }
 

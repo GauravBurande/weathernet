@@ -1,5 +1,7 @@
 import { addDeviceReading } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
+import { ethers } from "ethers";
+import abi from "@/app/abi.json";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,12 +19,7 @@ export async function POST(request: NextRequest) {
 
     await addDeviceReading(body.device_id, body);
 
-    console.log(
-      "Request Headers:",
-      Object.fromEntries(request.headers.entries())
-    );
-
-    // Return success response
+    // todo: hash data and send it to the contract
     return NextResponse.json({
       message: "Data received and logged successfully",
       receivedData: body,
