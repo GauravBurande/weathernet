@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse and log the request body
     const body = await request.json();
 
     console.log("Request Body:", JSON.stringify(body, null, 2));
