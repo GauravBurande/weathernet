@@ -60,31 +60,33 @@ export function WeatherDataTable() {
 
   if (error) {
     return (
-      <Card id="real-time">
-        <CardHeader>
-          <CardTitle>Live Weather Data</CardTitle>
-          <CardDescription>
-            Real-time sensor readings from DePIN network nodes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center p-8 text-center">
-            <div className="space-y-4">
-              <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-              <div>
-                <h3 className="text-lg font-semibold">
-                  Failed to load weather data
-                </h3>
-                <p className="text-muted-foreground">{error}</p>
+      <section id="real-time">
+        <Card>
+          <CardHeader>
+            <CardTitle>Live Weather Data</CardTitle>
+            <CardDescription>
+              Real-time sensor readings from DePIN network nodes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center p-8 text-center">
+              <div className="space-y-4">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    Failed to load weather data
+                  </h3>
+                  <p className="text-muted-foreground">{error}</p>
+                </div>
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
               </div>
-              <Button onClick={handleRefresh} variant="outline">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 

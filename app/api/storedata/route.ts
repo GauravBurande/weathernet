@@ -1,3 +1,4 @@
+import { addDeviceReading } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -14,7 +15,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    console.log("Request Body:", JSON.stringify(body, null, 2));
+    await addDeviceReading(body.device_id, body);
+
     console.log(
       "Request Headers:",
       Object.fromEntries(request.headers.entries())

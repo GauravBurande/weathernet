@@ -10,25 +10,23 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Wallet, Coins } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import abi from "@/app/abi.json";
+import { ethers } from "ethers";
+import { contractAddress, deviceId } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function WalletConnect() {
-  const { toast } = useToast();
   const [address, setAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState<string>("0.0");
   const [isConnecting, setIsConnecting] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimableTokens, setClaimableTokens] = useState("0.0");
 
-  const FUJI_CHAIN_ID = "0xa869"; // Avalanche Fuji Testnet chainId (hex)
+  const FUJI_CHAIN_ID = "0xa869";
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      toast({
-        title: "No Wallet Found",
-        description: "Install MetaMask to continue",
-        variant: "destructive",
-      });
+      toast.error("No Wallet Found, Install MetaMask to continue");
       return;
     }
 
@@ -73,42 +71,70 @@ export function WalletConnect() {
 
       setAddress(account);
       setBalance(balance);
-      setClaimableTokens("2.5"); // demo rewards
+      setClaimableTokens("0.0001");
 
-      toast({
-        title: "Wallet Connected",
-        description: "Connected to Fuji Testnet",
-      });
+      toast.success("Connected to Fuji Testnet");
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Connection Failed",
-        description: "Try again",
-        variant: "destructive",
-      });
+      toast.error("Connection Failed, try again!");
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const claimTokens = async () => {
-    if (!address) return;
-    setIsClaiming(true);
-    try {
-      await new Promise((r) => setTimeout(r, 2000)); // fake delay
+  const claimTokens = async (
+    address: string | undefined,
+    deviceId: string,
+    claimableTokens: string,
+    setIsClaiming: (val: boolean) => void,
+    setClaimableTokens: (val: string) => void
+  ) => {
+    if (!address) {
+      toast.error("Wallet not connected, please connect your wallet first.");
+      return;
+    }
 
-      toast({
-        title: "Claim Successful",
-        description: `You claimed ${claimableTokens} AVAX`,
-      });
-      setClaimableTokens("0.0");
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Claim Failed",
-        description: "Try again",
-        variant: "destructive",
-      });
+    setIsClaiming(true);
+
+    try {
+      // Get provider from MetaMask (Avalanche Fuji C-Chain)
+      const { ethereum } = window as any;
+      if (!ethereum) throw new Error("MetaMask not found");
+
+      const provider = new ethers.BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+
+      // Check chain (Fuji Testnet: 43113)
+      const { chainId } = await provider.getNetwork();
+      if (chainId !== BigInt(43113)) {
+        toast.error("Wrong Network, Please switch to Avalanche Fuji Testnet.");
+        return;
+      }
+
+      // Contract instance
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+
+      // Send tx
+      const tx = await contract.claimTokens(deviceId);
+      toast("Transaction Sent!");
+
+      // Wait for confirmation
+      const receipt = await tx.wait();
+      if (receipt.status === BigInt(1)) {
+        toast.success("Claim Successful");
+        setClaimableTokens("0.0");
+      } else {
+        throw new Error("Transaction failed");
+      }
+    } catch (err: any) {
+      console.error("Claim error:", err);
+
+      let message = "Try again";
+      if (err.code === 4001) message = "User rejected transaction";
+      else if (err.message?.includes("revert"))
+        message = "Claim not allowed yet";
+
+      toast("Claimed tokens!");
     } finally {
       setIsClaiming(false);
     }
@@ -118,10 +144,7 @@ export function WalletConnect() {
     setAddress(null);
     setBalance("0.0");
     setClaimableTokens("0.0");
-    toast({
-      title: "Wallet Disconnected",
-      description: "You have disconnected your wallet",
-    });
+    toast("Wallet Disconnected, You have disconnected your wallet");
   };
 
   return (
@@ -154,7 +177,15 @@ export function WalletConnect() {
             <div className="text-lg">Balance: {balance} AVAX</div>
             <div className="text-lg">Claimable: {claimableTokens} AVAX</div>
             <Button
-              onClick={claimTokens}
+              onClick={() =>
+                claimTokens(
+                  address,
+                  deviceId,
+                  claimableTokens,
+                  setIsClaiming,
+                  setClaimableTokens
+                )
+              }
               disabled={claimableTokens === "0.0" || isClaiming}
               className="w-full"
             >

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
 // Mock data matching the specified schema
 const generateWeatherData = () => {
@@ -9,7 +9,7 @@ const generateWeatherData = () => {
     { id: "esp32_node_004", lat: 22.5789, lon: 88.3521 },
     { id: "esp32_node_005", lat: 22.5645, lon: 88.3598 },
     { id: "esp32_node_006", lat: 22.5712, lon: 88.3456 },
-  ]
+  ];
 
   return devices.map((device) => ({
     device_id: device.id,
@@ -24,15 +24,17 @@ const generateWeatherData = () => {
       lat: device.lat,
       lon: device.lon,
     },
-  }))
-}
+  }));
+};
+
+// {"device_id":"Node_Provider_1","sensors":{"temperature_c":2.40,"humidityPercent":27.30,"waterLevel":"Water Level: 2.83 ft","airQuality":2375},"location":{"lat":17.384300,"lon":78.458298}}
 
 export async function GET() {
   try {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const data = generateWeatherData()
+    const data = generateWeatherData();
 
     return NextResponse.json(data, {
       headers: {
@@ -40,9 +42,12 @@ export async function GET() {
         Pragma: "no-cache",
         Expires: "0",
       },
-    })
+    });
   } catch (error) {
-    console.error("Error generating weather data:", error)
-    return NextResponse.json({ error: "Failed to fetch weather data" }, { status: 500 })
+    console.error("Error generating weather data:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch weather data" },
+      { status: 500 }
+    );
   }
 }

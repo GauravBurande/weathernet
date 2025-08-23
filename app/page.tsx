@@ -75,12 +75,6 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-4">
-                  <Link href="#network-map">
-                    <Button className="bg-primary cursor-pointer hover:bg-primary/90">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      View Network Map
-                    </Button>
-                  </Link>
                   <Link href="#real-time">
                     <Button className="cursor-pointer" variant="outline">
                       <Activity className="h-4 w-4 mr-2" />
