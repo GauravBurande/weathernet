@@ -60,7 +60,7 @@ export function WeatherDataTable() {
 
   if (error) {
     return (
-      <Card>
+      <Card id="real-time">
         <CardHeader>
           <CardTitle>Live Weather Data</CardTitle>
           <CardDescription>

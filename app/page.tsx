@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DashboardStats } from "@/components/dashboard-stats";
+import logo from "@/app/icon.png";
+import Image from "next/image";
 
 export default function Dashboard() {
   return (
@@ -34,14 +36,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Cloud className="h-8 w-8 text-primary" />
+                <Image className="h-12 w-12" alt="weathernet" src={logo} />
                 <div>
                   <h1 className="text-xl font-bold text-foreground">
-                    DePIN WeatherNet
+                    WeatherNet
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Avalanche C-Chain Fuji
-                  </p>
                 </div>
               </div>
             </div>
@@ -76,16 +75,20 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-4">
-                  <Button className="bg-primary hover:bg-primary/90">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    View Network Map
-                  </Button>
-                  <Button variant="outline">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Real-time Data
-                  </Button>
+                  <Link href="#network-map">
+                    <Button className="bg-primary cursor-pointer hover:bg-primary/90">
+                      <MapPin className="h-4 w-4 mr-2" />
+                      View Network Map
+                    </Button>
+                  </Link>
+                  <Link href="#real-time">
+                    <Button className="cursor-pointer" variant="outline">
+                      <Activity className="h-4 w-4 mr-2" />
+                      Real-time Data
+                    </Button>
+                  </Link>
                   <Link href="/apply">
-                    <Button variant="outline">
+                    <Button className="cursor-pointer" variant="outline">
                       <Zap className="h-4 w-4 mr-2" />
                       Apply for Node
                     </Button>
@@ -109,17 +112,17 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* Charts Section */}
-            <WeatherCharts />
+            {/* Data Table */}
+            <WeatherDataTable />
 
             {/* AI Analysis Section */}
             <WeatherAIAnalysis />
 
+            {/* Charts Section */}
+            <WeatherCharts />
+
             {/* Network Map */}
             <NetworkMap />
-
-            {/* Data Table */}
-            <WeatherDataTable />
           </div>
         </div>
       </main>

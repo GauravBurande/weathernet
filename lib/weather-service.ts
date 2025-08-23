@@ -55,7 +55,10 @@ export class WeatherDataService {
       console.error("Weather data fetch error:", error);
 
       // Implement retry logic for production
-      if (config.enableMonitoring && this.retryCount < config.retryAttempts) {
+      if (
+        config.production.enableMonitoring &&
+        this.retryCount < config.retryAttempts
+      ) {
         this.retryCount++;
         console.log(
           `Retrying weather data fetch (attempt ${this.retryCount}/${config.retryAttempts})`
