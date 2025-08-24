@@ -47,11 +47,11 @@ function getAQIStatus(sensorValue: number) {
   if (sensorValue <= 500) return { label: "Good", variant: "default" as const };
   if (sensorValue <= 1000)
     return { label: "Moderate", variant: "secondary" as const };
-  if (sensorValue <= 2000)
-    return { label: "Unhealthy for Sensitive", variant: "outline" as const };
   if (sensorValue <= 3000)
-    return { label: "Unhealthy", variant: "destructive" as const };
+    return { label: "Unhealthy for Sensitive", variant: "secondary" as const };
   if (sensorValue <= 4000)
+    return { label: "Unhealthy", variant: "destructive" as const };
+  if (sensorValue <= 5000)
     return { label: "Very Unhealthy", variant: "destructive" as const };
   return { label: "Hazardous", variant: "destructive" as const };
 }
