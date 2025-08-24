@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.log("Received data:", body);
     await addDeviceReading(body.device_id, body);
 
-    await sendWeatherData(body);
+    // await sendWeatherData(body);
 
     return NextResponse.json({
       message: "Data received and logged successfully",
@@ -46,39 +46,40 @@ export async function GET() {
   });
 }
 
-export const sendWeatherData = async (weatherData: any) => {
-  try {
-    const { ethereum } = window as any;
-    if (!ethereum) throw new Error("MetaMask not found");
+// can't send on server side
+// export const sendWeatherData = async (weatherData: any) => {
+//   try {
+//     const { ethereum } = window as any;
+//     if (!ethereum) throw new Error("MetaMask not found");
 
-    const provider = new ethers.BrowserProvider(ethereum);
-    const signer = await provider.getSigner();
+//     const provider = new ethers.BrowserProvider(ethereum);
+//     const signer = await provider.getSigner();
 
-    const { chainId } = await provider.getNetwork();
-    if (chainId !== BigInt(43113)) {
-      await ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xa869" }], // 43113 hex
-      });
-    }
+//     const { chainId } = await provider.getNetwork();
+//     if (chainId !== BigInt(43113)) {
+//       await ethereum.request({
+//         method: "wallet_switchEthereumChain",
+//         params: [{ chainId: "0xa869" }], // 43113 hex
+//       });
+//     }
 
-    const contract = new ethers.Contract(contractAddress, abi, signer);
+//     const contract = new ethers.Contract(contractAddress, abi, signer);
 
-    const jsonString = JSON.stringify(weatherData);
-    const dataHash = ethers.keccak256(ethers.toUtf8Bytes(jsonString));
+//     const jsonString = JSON.stringify(weatherData);
+//     const dataHash = ethers.keccak256(ethers.toUtf8Bytes(jsonString));
 
-    console.log("Weather JSON:", jsonString);
-    console.log("Hashed Data:", dataHash);
+//     console.log("Weather JSON:", jsonString);
+//     console.log("Hashed Data:", dataHash);
 
-    const tx = await contract.storeHash(weatherData.device_id, dataHash);
-    console.log("Tx sent:", tx.hash);
+//     const tx = await contract.storeHash(weatherData.device_id, dataHash);
+//     console.log("Tx sent:", tx.hash);
 
-    const receipt = await tx.wait();
-    console.log("Tx confirmed:", receipt);
+//     const receipt = await tx.wait();
+//     console.log("Tx confirmed:", receipt);
 
-    alert("Weather data successfully stored on Avalanche Fuji!");
-  } catch (err) {
-    console.error("Error sending weather data:", err);
-    alert("Failed to send weather data");
-  }
-};
+//     alert("Weather data successfully stored on Avalanche Fuji!");
+//   } catch (err) {
+//     console.error("Error sending weather data:", err);
+//     alert("Failed to send weather data");
+//   }
+// };
