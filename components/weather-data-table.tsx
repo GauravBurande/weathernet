@@ -37,18 +37,23 @@ function formatTimestamp(timestamp: string) {
   });
 }
 
-function getAQIStatus(aqi: number) {
-  if (aqi == null || isNaN(aqi)) {
+function getAQIStatus(sensorValue: number) {
+  if (sensorValue == null || isNaN(sensorValue)) {
     return { label: "Unknown", variant: "secondary" as const };
   }
 
-  if (aqi <= 50) return { label: "Good", variant: "default" as const };
-  if (aqi <= 100) return { label: "Moderate", variant: "secondary" as const };
-  if (aqi <= 150)
+  // Normalize raw sensor values into approximate AQI categories
+  // Assume 0–5000 sensor range
+  if (sensorValue <= 500) return { label: "Good", variant: "default" as const };
+  if (sensorValue <= 1000)
+    return { label: "Moderate", variant: "secondary" as const };
+  if (sensorValue <= 2000)
     return { label: "Unhealthy for Sensitive", variant: "outline" as const };
-  if (aqi <= 200)
+  if (sensorValue <= 3000)
     return { label: "Unhealthy", variant: "destructive" as const };
-  return { label: "Very Unhealthy", variant: "destructive" as const };
+  if (sensorValue <= 4000)
+    return { label: "Very Unhealthy", variant: "destructive" as const };
+  return { label: "Hazardous", variant: "destructive" as const };
 }
 
 // Map incoming Redis data to expected table format
