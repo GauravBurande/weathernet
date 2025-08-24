@@ -60,9 +60,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simulate processing delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     // Generate application ID
     const applicationId = `WN-${Date.now().toString().slice(-6)}`;
 

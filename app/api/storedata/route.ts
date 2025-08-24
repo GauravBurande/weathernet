@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import abi from "@/app/abi.json";
 import { contractAddress } from "@/lib/utils";
-import { send } from "process";
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,7 +70,6 @@ export const sendWeatherData = async (weatherData: any) => {
     console.log("Weather JSON:", jsonString);
     console.log("Hashed Data:", dataHash);
 
-    // Step 2: Call storeHash(deviceId, hash)
     const tx = await contract.storeHash(weatherData.device_id, dataHash);
     console.log("Tx sent:", tx.hash);
 

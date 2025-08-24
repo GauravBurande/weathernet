@@ -32,6 +32,9 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ethers } from "ethers";
+import { contractAddress, deviceId } from "@/lib/utils";
+import abi from "@/app/abi.json";
 
 interface FormData {
   // Personal Information
@@ -90,6 +93,55 @@ export function NodeApplicationForm() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  async function getContract() {
+    const { ethereum } = window as any;
+    if (!ethereum) throw new Error("MetaMask not found");
+
+    const provider = new ethers.BrowserProvider(ethereum);
+    const signer = await provider.getSigner();
+
+    const { chainId } = await provider.getNetwork();
+    if (chainId !== BigInt(43113)) {
+      await ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0xa869" }], // Fuji Testnet
+      });
+    }
+
+    return new ethers.Contract(contractAddress, abi, signer);
+  }
+
+  const initiateNode = async (device_id: string, tokenAddress: string) => {
+    try {
+      const contract = await getContract();
+
+      // Check if node already exists
+      const node = await contract.nodes(device_id);
+      if (node.owner !== ethers.ZeroAddress) {
+        alert("⚠️ Node already initiated for this device.");
+        return;
+      }
+
+      // Call initiateNode
+      const tx = await contract.initiateNode(device_id, tokenAddress);
+      console.log("Initiate tx sent:", tx.hash);
+
+      const receipt = await tx.wait();
+      if (receipt.status === BigInt(1)) {
+        alert(`🎉 Node initiated successfully for ${device_id}`);
+      } else {
+        alert("⚠️ Node initiation failed.");
+      }
+    } catch (err: any) {
+      console.error("❌ Initiate error:", err);
+      if (err.code === 4001) {
+        alert("User rejected transaction");
+      } else {
+        alert("Node initiation failed");
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -118,6 +170,8 @@ export function NodeApplicationForm() {
     setIsSubmitting(true);
 
     try {
+      initiateNode(deviceId, formData.avaxWalletAddress);
+
       const response = await fetch("/api/apply", {
         method: "POST",
         headers: {
