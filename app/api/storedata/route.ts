@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    console.log("Received data:", body);
     await addDeviceReading(body.device_id, body);
 
     // todo: hash data and send it to the contract
